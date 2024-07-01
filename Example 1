@@ -9,6 +9,10 @@ B = log(2);
 h = 0.01;
 x = a:h:b;
 
+function z = f(x,y,Dy)
+  z = (-(2.*x)./(1+x.^2)).*Dy+y+(2./(1+x.^2))-log(1+x.^2);
+end
+
 
 function y = exactSolution(x)
    y = log(1+x.^2);
