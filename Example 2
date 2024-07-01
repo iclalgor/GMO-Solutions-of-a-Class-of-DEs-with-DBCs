@@ -1,0 +1,10 @@
+%% Problem
+% y'' = f(x,y,y'), a<=x<=b
+% y(a) = A;
+% y(b) = B;
+a = 0;  %a-xa
+b = 1;  %b-xb
+A = 0;   %A-ya
+B = log(2); %B-yb
+h = 0.01;
+x = a:h:b;
