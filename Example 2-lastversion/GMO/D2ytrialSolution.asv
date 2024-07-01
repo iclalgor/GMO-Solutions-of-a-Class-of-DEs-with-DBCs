@@ -1,0 +1,7 @@
+function d2y = D2ytrialSolution(model,x,a,b,A,B)
+    n = length(x)-1; 
+    h = (b-a)/n;
+    net = model(x);
+    dnet = (model(x+h) + model(x-h))/(2*h);
+    d2y = 2*net + 2*(2*x-a-b).*dnet +(x-a).*(x-b).*d2net;
+end

@@ -1,0 +1,117 @@
+clear; clc;
+exampleNo = 1;
+%% Problem
+% y'' = f(x,y,y'), a<=x<=b
+% y(a) = A;
+% y(b) = B;
+a = 0;
+b = pi/2;
+A = -1/2; 
+B = 1;
+h = pi/200;
+x = a:h:b;
+indisler = p(length(x));
+
+%% Model
+noNeurons = 10;
+params.noNeurons = noNeurons;
+model = fitnet(noNeurons);
+%model = fitnet(noNeurons,'traingd');
+model = init(model);
+% Pretraining for boundaries
+model = train(model,[a b], [A B]);
+W = getwb(model);
+
+problem.model =  model;
+problem.x = x;
+problem.a = a;
+problem.b = b;
+problem.A = A;
+problem.B = B;
+
+% Train model with GMO
+run=1;     % Maximum number of the algorithm runnings conducted
+np=50;     % Number of search agents (solutions)
+maxit=100;  % Maximum number of iterations
+epsilon=0; % This parameter must be either set to "eps" (typically for the uni-modal or simple functions) or zero (typically for the multi-modal or complex functions)
+lb = -1;
+ub = 1;
+nx = numel(W); 
+varmax=ub*ones(1,nx); % Upper bound defined for the positions which can generally be a desired vector
+varmin=lb*ones(1,nx); % Lower bound defined for the positions which can generally be a desired vector
+limvel=0.1; % A ratio of the maximum distance in the search space to form the maximum velocity 
+velmax=limvel*(varmax(1,1:nx)-varmin(1,1:nx)); % Upper bound defined for the velocities
+velmin=-velmax; % Lower bound defined for the velocities
+% Definitions of GMO parameters
+params.np = np;
+params.nx = nx;
+params.maxit = maxit;
+params.varmax = varmax ;
+params.varmin = varmin ;
+params.velmax = velmax;
+params.velmin = velmin ;
+params.epsilon = 1;
+
+z_iter_main=zeros(run,maxit); % her iterasyonda elde edilen
+z_final_main=zeros(run,1);
+pos_final_main=zeros(run,nx);
+%x1=zeros(maxit);
+%y1=zeros(maxit);
+
+for nrun=1:run
+    [z_iter,z_final,pos_final]=GMO(problem,params);
+    z_iter_main(nrun,1:maxit)=z_iter(1:maxit);
+    z_final_main(nrun)=z_final;
+    pos_final_main(nrun,1:nx)=pos_final(1:nx);
+    disp(['The best objective function value obtained by GMO = ',num2str(z_final_main(nrun))]);
+    disp(['The best solution obtained by GMO = ','[',num2str(pos_final_main(nrun,1:nx)),']']);
+end
+
+%% Eğitilmiş modeli ayarla
+[minLoss,minId] = min(z_final_main);
+bestWB = pos_final_main(minId,:);
+model = setwb(model, bestWB);
+
+%Results
+semilogy(z_iter,'-r','LineWidth',1.25);
+title('\fontsize{12}\bf Cost Function');
+xlabel('\fontsize{12}\bf Iteration');ylabel('\fontsize{12}\bf Fitness(Best-so-far)');
+legend('\fontsize{10}\bf GMO');
+fig=gcf;
+fig.InvertHardcopy = 'on';
+saveas(gcf,['Figure_Exmp_' num2str(exampleNo) '_b.fig']);
+print(gcf,['Figure_Exmp_' num2str(exampleNo) '_b.jpg'],'-djpeg','-r300');
+print(gcf,['Figure_Exmp_' num2str(exampleNo) '_b.eps'],'-depsc','-r300');
+
+% Gerçek çözüm grafiği
+xe = a:h:b;
+ye = exactSolution(xe); % Exact Solution
+figure;
+hold on;
+plot(xe,ye,'-k','LineWidth',1.25); % Exact Solution for Training Set
+
+% Eğitim kümesi çözümleri
+[y,~,~] = trialSolution(model,x,a,b,A,B);
+plot(x,y,'ro','LineWidth',1.25); % Exact Solution for Training Set
+
+% Test kümesi çözümleri
+xtest = a:h/10:b;%a + (b-a)*rand(1,20);
+ytest = trialSolution(model,xtest,a,b,A,B);
+plot(xtest,ytest,'gx','LineWidth',1.25); % Exact Solution for Training Set
+
+title('\fontsize{12}\bf Neural Net Solution optimised by GMO');
+xlabel('\fontsize{12}\bf x');
+ylabel('\fontsize{12}\bf y');
+legend('Gerçek çözüm', '\fontsize{10}\bf Eğitim kümesinin sayısal çözümü','\fontsize{10}\bf Test kümesinin sayısal çözümü','Location','southeast');
+hold off;
+
+fig=gcf;
+fig.InvertHardcopy = 'on';
+saveas(fig,['Figure_Exmp_' num2str(exampleNo) '_a.fig']);
+print(gcf,['Figure_Exmp_' num2str(exampleNo) '_a.jpg'],'-djpeg','-r300');
+print(gcf,['Figure_Exmp_' num2str(exampleNo) '_a.eps'],'-depsc','-r300');
+
+
+%% Reports
+label = 'tbl:result';
+displayResults(xtest,exactSolution(xtest),ytest,'Neural Net Solution optimised by GMO',label,exampleNo,params);
