@@ -9,6 +9,10 @@ B = log(2); %B-yb
 h = 0.01;
 x = a:h:b;
 
+function z = f(x,y,Dy)
+  z = -y.^2;
+end
+
 function y = exactSolution(x)
    y = tan(pi/4*(1-x));
 end
